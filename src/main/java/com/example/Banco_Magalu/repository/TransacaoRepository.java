@@ -9,5 +9,5 @@ import java.util.UUID;
 
 public interface TransacaoRepository extends JpaRepository<Transacao, UUID> {
      // metodo para buscar transacoes por conta corrente
-    List<Transacao> findByContaContacorrente(ContaCorrente contaCorrente);
+    List<Transacao> findByContaCorrente(ContaCorrente contaCorrente);
 }

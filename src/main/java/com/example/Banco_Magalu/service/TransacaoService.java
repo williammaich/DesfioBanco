@@ -40,7 +40,7 @@ public class TransacaoService {
       if (contaCorrente == null || contaCorrente.getNumero() == null) {
           throw new IllegalArgumentException("Conta corrente invalida.");
       }
-        return transacaoRepository.findByContaContacorrente(contaCorrente);
+        return transacaoRepository.findByContaCorrente(contaCorrente);
       }
 
 

@@ -9,7 +9,7 @@ public class Auditoria {
     @Id
     private UUID id;
 
-    private String messagem;
+    private String mensagem;
 
     @ManyToOne
     @JoinColumn(name = "transacao_id", nullable = false)
@@ -17,9 +17,9 @@ public class Auditoria {
 
     public Auditoria() { }
 
-    public Auditoria(UUID id, String messagem, Transacao transacao) {
+    public Auditoria(UUID id, String mensagem, Transacao transacao) {
         this.id = id;
-        this.messagem = messagem;
+        this.mensagem = mensagem;
         this.transacao = transacao;
     }
 
@@ -31,12 +31,12 @@ public class Auditoria {
         this.id = id;
     }
 
-    public String getMessagem() {
-        return messagem;
+    public String getMensagem() {
+        return mensagem;
     }
 
-    public void setMessagem(String messagem) {
-        this.messagem = messagem;
+    public void setMensagem(String mensagem) {
+        this.mensagem = mensagem;
     }
 
     public Transacao getTransacao() {
