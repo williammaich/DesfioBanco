@@ -5,6 +5,7 @@ import com.example.Banco_Magalu.repository.AuditoriaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,6 +35,24 @@ public class AuditoriaService {
     public void deleteAll() {
         auditoriaRepository.deleteAll();
     }
+
+    /*
+    * Este método lista mensagens por conta do usuário.
+    *
+    * @param usuario - Usuário que deseja listar as mensagens de auditoria.
+    * @return - Lista de mensagens de auditoria do usuário.
+     */
+    public List<String> buscarMensagensPorConta(String numero) {
+        // Recupera as auditorias associadas à conta
+        List<Auditoria> auditorias = auditoriaRepository.findByTransacao_ContaCorrente_Numero(numero);
+
+        // Retorna uma lista de mensagens extraídas das auditorias
+        return auditorias.stream()
+                .map(Auditoria::getMensagem)
+                .collect(Collectors.toList());
+    }
+
+
 
     /*
      * Este método retorna todas as mensagens de auditoria do banco de dados.
