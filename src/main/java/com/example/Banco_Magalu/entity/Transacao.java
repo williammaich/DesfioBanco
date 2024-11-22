@@ -1,5 +1,7 @@
 package com.example.Banco_Magalu.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -26,6 +28,7 @@ public class Transacao {
 
     @ManyToOne
     @JoinColumn(name = "conta_corrente_numero", nullable = false)
+    @JsonBackReference
     private ContaCorrente contaCorrente;
 
 

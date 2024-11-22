@@ -49,18 +49,16 @@ public class ContaCorrenteService {
      * @param novoSaldo - novo saldo da conta corrente
      */
     public void atualizarSaldo(String numero, BigDecimal novoSaldo){
-        ContaCorrente conta = contaCorrenteRepository.findById(numero).orElseThrow(
-                ()-> new RuntimeException("Conta não encontrada"));
-        conta.setSaldo(novoSaldo);
-        contaCorrenteRepository.save(conta);
+       if(novoSaldo.compareTo(BigDecimal.ZERO) < 0){
+           throw new IllegalArgumentException("O saldo não pode ser negativo");
+       }
+       ContaCorrente conta = contaCorrenteRepository.findById(numero)
+               .orElseThrow(() -> new IllegalArgumentException("Conta não encontrada" + numero));
+
+       conta.setSaldo(novoSaldo);
+       contaCorrenteRepository.save(conta);
     }
 
-    //Método para transferir fundos de uma conta para outra
-
-
-    //Método para sacar fundos da conta
-
-    //Método para depositar fundos na conta
 }
 
 

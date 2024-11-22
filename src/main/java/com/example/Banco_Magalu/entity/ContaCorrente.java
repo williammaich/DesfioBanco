@@ -1,5 +1,6 @@
 package com.example.Banco_Magalu.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -21,6 +22,7 @@ public class ContaCorrente {
     private LocalDate dataDeCriacao;
 
     @OneToMany(mappedBy = "contaCorrente", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<Transacao> transacoes;
 
 

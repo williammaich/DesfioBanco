@@ -1,6 +1,7 @@
 package com.example.Banco_Magalu.service;
 
 import com.example.Banco_Magalu.entity.Auditoria;
+import com.example.Banco_Magalu.entity.Transacao;
 import com.example.Banco_Magalu.repository.AuditoriaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,9 +23,11 @@ public class AuditoriaService {
      *
      * @param mensagem - Mensagem de auditoria a ser salva.
      */
-    public void save(String mensagem) {
+    public void save(String mensagem, Transacao transacao) {
+
         Auditoria auditoria = new Auditoria();
         auditoria.setMensagem(mensagem);
+        auditoria.setTransacao(transacao);
         auditoriaRepository.save(auditoria);
     }
 
