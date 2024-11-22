@@ -12,6 +12,22 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExeptionHandler {
 
+    @ExceptionHandler(ContaNaoEncontradaException.class)
+    public ResponseEntity<?> handleContaNaoEncontradaException(ContaNaoEncontradaException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(ContaJaExisteException.class)
+    public ResponseEntity<?> handleContaJaExisteException(ContaJaExisteException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(SaldoInsuficienteException.class)
+    public ResponseEntity<?> handleSaldoInsuficienteException(SaldoInsuficienteException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleValidationExceptions(MethodArgumentNotValidException ex) {
         // Extrai as mensagens de erro dos campos inválidos

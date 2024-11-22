@@ -2,6 +2,7 @@ package com.example.Banco_Magalu.controller;
 
 import com.example.Banco_Magalu.entity.ContaCorrente;
 import com.example.Banco_Magalu.service.ContaCorrenteService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,13 +20,13 @@ public class ContaCorrenteController {
         }
 
     @PostMapping
-    public ResponseEntity<ContaCorrente> criarConta(@RequestBody ContaCorrente contaCorrente) {
+    public ResponseEntity<ContaCorrente> criarConta(@Valid @RequestBody ContaCorrente contaCorrente) {
         ContaCorrente novaConta = contaCorrenteService.criarConta(contaCorrente);
         return ResponseEntity.ok(novaConta);
     }
 
     @GetMapping("/{numero}")
-    public ResponseEntity<ContaCorrente> buscarConta(@PathVariable("numero") String numero){
+    public ResponseEntity<ContaCorrente> buscarConta(@Valid@PathVariable("numero") String numero){
         return contaCorrenteService.buscarConta(numero)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

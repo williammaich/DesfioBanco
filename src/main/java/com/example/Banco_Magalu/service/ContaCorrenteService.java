@@ -27,6 +27,11 @@ public class ContaCorrenteService {
         if(contaCorrente == null){
            throw new IllegalArgumentException("A conta corrente não pode ser nula");
         }
+
+        boolean contaJaExiste = contaCorrenteRepository.existsById(contaCorrente.getNumero());
+        if(contaJaExiste){
+            throw new IllegalArgumentException("Já existe uma conta com o número " + contaCorrente.getNumero());
+        }
         return contaCorrenteRepository.save(contaCorrente);
     }
 
