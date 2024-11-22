@@ -28,6 +28,88 @@ public class TransacaoService {
     }
 
     /**
+     * Realiza um depósito na conta.
+     * @param numeroConta Número da conta.
+     * @param valor Valor do depósito.
+     * @return A transação realizada.
+     */
+     @Transactional
+     public Transacao realizarDeposito(String numeroConta, BigDecimal valor) {
+         //verifica se a conta existe
+         ContaCorrente conta = contaCorrenteService.buscarConta(numeroConta)
+                 .orElseThrow(() -> new ContaNaoEncontradaException("Conta não encontrada: " + numeroConta));
+
+         //verifica se o valor do depósito é maior que zero
+         if (valor.compareTo(BigDecimal.ZERO) <= 0) {
+             throw new IllegalArgumentException("Valor do depósito deve ser maior que zero.");
+         }
+
+         // Atualiza o saldo da conta
+         conta.setSaldo(conta.getSaldo().add(valor));
+
+         // Salva a atualização do saldo na conta
+         contaCorrenteService.atualizarSaldo(conta.getNumero(), conta.getSaldo());
+
+         // Cria a transação e salva
+         Transacao transacao = new Transacao();
+         transacao.setTipo(TipoTransacao.DEPOSITO);
+         transacao.setValor(valor);
+         transacao.setData(java.time.LocalDate.now());
+         transacao.setDescricao("Depósito de " + valor + " na conta " + numeroConta +" na data de "+ java.time.LocalDate.now());
+         transacao.setContaCorrente(conta);
+         transacaoRepository.save(transacao);
+
+         // Salva registro do depósito na auditoria
+         String logMensagem = "Depósito de "+ valor + " realizado na conta "+ numeroConta + ", na data de " + java.time.LocalDate.now();
+          auditoriaService.save(logMensagem, transacao);
+         return transacao;
+     }
+    /**
+     * Realiza um saque na conta.
+     * @param numeroConta Número da conta.
+     * @param valor Valor do saque.
+     * @return A transação realizada.
+     */
+    @Transactional
+    public Transacao realizarSaque(String numeroConta, BigDecimal valor){
+        //verifica se a conta existe
+        ContaCorrente conta = contaCorrenteService.buscarConta(numeroConta)
+               .orElseThrow(() -> new ContaNaoEncontradaException("Conta não encontrada: " + numeroConta));
+
+        //verifica se o valor do saque é maior que zero
+        if (valor.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Valor do saque deve ser maior que zero.");
+        }
+        //verifica se o saldo da conta é maior que o valor do saque
+        if (conta.getSaldo().compareTo(valor) < 0) {
+            throw new SaldoInsuficienteException("Saldo insuficiente na conta: " + numeroConta);
+        }
+
+        // Atualiza o saldo da conta
+        conta.setSaldo(conta.getSaldo().subtract(valor));
+
+        // Salva a atualização do saldo na conta
+        contaCorrenteService.atualizarSaldo(conta.getNumero(), conta.getSaldo());
+
+        // Cria a transação e salva
+        Transacao transacao = new Transacao();
+        transacao.setTipo(TipoTransacao.SAQUE);
+        transacao.setValor(valor);
+        transacao.setData(java.time.LocalDate.now());
+        transacao.setDescricao("Saque de " + valor + " na conta " + numeroConta +" na data de "+ java.time.LocalDate.now());
+        transacao.setContaCorrente(conta);
+        transacaoRepository.save(transacao);
+
+        // Salva registro do saque na auditoria
+        String logMensagem = "Saque de "+ valor + " realizado na conta "+ numeroConta + ", na data de " + java.time.LocalDate.now();
+        auditoriaService.save(logMensagem, transacao);
+
+        return transacao;
+
+    }
+
+
+    /**
      * Realiza a transferência de valores entre contas.
      *
      * @param numeroContaOrigem Número da conta de origem.
@@ -74,8 +156,8 @@ public class TransacaoService {
             auditoriaService.save(logMensagem, transacao);
 
             return transacao;
-
     }
+
 
 
 

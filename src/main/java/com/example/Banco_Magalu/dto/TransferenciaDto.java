@@ -3,6 +3,7 @@ package com.example.Banco_Magalu.dto;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
 
@@ -16,6 +17,7 @@ public class TransferenciaDto {
 
     @NotNull(message = "Valor não pode ser nulo")
     @DecimalMin(value = "0.01", message = "Valor deve ser maior que zero")
+    @Positive(message = "Valor deve ser positivo")
     private BigDecimal valor;
 
     public String getContaOrigem() {
