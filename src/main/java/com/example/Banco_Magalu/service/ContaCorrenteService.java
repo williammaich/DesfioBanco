@@ -32,6 +32,17 @@ public class ContaCorrenteService {
         if(contaJaExiste){
             throw new IllegalArgumentException("Já existe uma conta com o número " + contaCorrente.getNumero());
         }
+
+        if(contaCorrente.getSaldo() == null){
+            contaCorrente.setSaldo(BigDecimal.valueOf(0.00));
+        }
+        if(contaCorrente.getLimiteCredito() == null){
+            contaCorrente.setLimiteCredito(BigDecimal.valueOf(5000.00));
+        }
+        if(contaCorrente.getLimiteMaximo() == null){
+            contaCorrente.setLimiteMaximo(BigDecimal.valueOf(5000.00));
+        }
+
         return contaCorrenteRepository.save(contaCorrente);
     }
 
@@ -64,6 +75,29 @@ public class ContaCorrenteService {
        contaCorrenteRepository.save(conta);
     }
 
+    /*
+     * Método para atualizar o limite de uma conta corrente
+     *
+     * @param numero - número da conta corrente a ser atualizada
+     * @param novoLimite - novo limite da conta corrente
+     */
+    public void atualizarLimite(String numero, BigDecimal novoLimite){
+        if(novoLimite.compareTo(BigDecimal.ZERO) < 0){
+            throw new IllegalArgumentException("O limite não pode ser negativo");
+        }
+        ContaCorrente conta = contaCorrenteRepository.findById(numero)
+                .orElseThrow(() -> new IllegalArgumentException("Conta não encontrada" + numero));
+
+        conta.setLimiteCredito(novoLimite);
+        contaCorrenteRepository.save(conta);
+    }
+
+
+    public BigDecimal buscarLimiteMaximo(String numero) {
+        ContaCorrente conta = buscarConta(numero)
+                .orElseThrow(() -> new IllegalArgumentException("Conta não encontrada" + numero));
+         return conta.getLimiteCredito();
+    }
 }
 
 

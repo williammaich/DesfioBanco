@@ -22,6 +22,9 @@ public class ContaCorrente {
     @Column(name = "data_criacao", nullable = false)
     private LocalDate dataDeCriacao;
 
+    @Column(name = "limite_maximo")
+    public BigDecimal limiteMaximo;
+
     @OneToMany(mappedBy = "contaCorrente", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<Transacao> transacoes;
@@ -29,12 +32,13 @@ public class ContaCorrente {
 
     public ContaCorrente() { }
 
-    public ContaCorrente(String numero, BigDecimal saldo, BigDecimal limiteCredito, LocalDate dataDeCriacao, List<Transacao> transacoes) {
+    public ContaCorrente(String numero, BigDecimal saldo, BigDecimal limiteCredito, LocalDate dataDeCriacao,BigDecimal limiteMaximo, List<Transacao> transacoes) {
         this.numero = numero;
         this.saldo = saldo;
         this.limiteCredito = limiteCredito;
         this.dataDeCriacao = dataDeCriacao;
         this.transacoes = transacoes;
+        this.limiteMaximo = limiteMaximo;
     }
 
     public String getNumero() {
@@ -75,5 +79,13 @@ public class ContaCorrente {
 
     public void setTransacoes(List<Transacao> transacoes) {
         this.transacoes = transacoes;
+    }
+
+    public BigDecimal getLimiteMaximo() {
+        return limiteMaximo;
+    }
+
+    public void setLimiteMaximo(BigDecimal limiteMaximo) {
+        this.limiteMaximo = limiteMaximo;
     }
 }
