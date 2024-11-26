@@ -80,13 +80,25 @@ public class TransacaoService {
         if (valor.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Valor do saque deve ser maior que zero.");
         }
-        //verifica se o saldo da conta é maior que o valor do saque
-        if (conta.getSaldo().compareTo(valor) < 0) {
+
+        BigDecimal taxaSaque = valor.multiply(BigDecimal.valueOf(0.01));
+        BigDecimal valorComTaxa = valor.add(taxaSaque);
+
+        BigDecimal limiteDisponivel = conta.getSaldo().add(conta.getLimiteCredito());
+
+        if (limiteDisponivel.compareTo(valorComTaxa) < 0) {
             throw new SaldoInsuficienteException("Saldo insuficiente na conta: " + numeroConta);
         }
 
+        boolean usandoLimite = conta.getSaldo().compareTo(valorComTaxa) < 0;
+        if (usandoLimite) {
+            taxaSaque = valor.multiply(BigDecimal.valueOf(0.03));
+            valorComTaxa = valor.add(taxaSaque);
+        }
+
+
         // Atualiza o saldo da conta
-        conta.setSaldo(conta.getSaldo().subtract(valor));
+        conta.setSaldo(conta.getSaldo().subtract(valorComTaxa));
 
         // Salva a atualização do saldo na conta
         contaCorrenteService.atualizarSaldo(conta.getNumero(), conta.getSaldo());
@@ -96,12 +108,15 @@ public class TransacaoService {
         transacao.setTipo(TipoTransacao.SAQUE);
         transacao.setValor(valor);
         transacao.setData(java.time.LocalDate.now());
-        transacao.setDescricao("Saque de " + valor + " na conta " + numeroConta +" na data de "+ java.time.LocalDate.now());
+        transacao.setDescricao("Saque de R$ " + valor + " na conta " + numeroConta +" na data de "+ java.time.LocalDate.now()
+                + ". Taxa de saque: R$ " +taxaSaque+ ", Limite disponível: R$ "+ conta.getLimiteCredito());
+
         transacao.setContaCorrente(conta);
         transacaoRepository.save(transacao);
 
         // Salva registro do saque na auditoria
-        String logMensagem = "Saque de "+ valor + " realizado na conta "+ numeroConta + ", na data de " + java.time.LocalDate.now();
+        String logMensagem = "Saque de R$ "+ valor + " realizado na conta "+ numeroConta + ", na data de " + java.time.LocalDate.now()
+                + ". Taxa de saque: R$ " +taxaSaque+ ", Limite disponível: R$ "+ conta.getLimiteCredito();
         auditoriaService.save(logMensagem, transacao);
 
         return transacao;
@@ -130,16 +145,26 @@ public class TransacaoService {
             ContaCorrente contaDestino = contaCorrenteService.buscarConta(numeroContaDestino)
                     .orElseThrow(() -> new ContaNaoEncontradaException("Conta de destino não encontrada: " + numeroContaDestino));
 
-            if (contaOrigem.getSaldo().compareTo(valor) < 0) {
+            BigDecimal taxaTransferencia = valor.multiply(BigDecimal.valueOf(0.01));
+
+
+            boolean usarLimite = contaOrigem.getSaldo().compareTo(valor.add(taxaTransferencia)) < 0;
+            if (usarLimite) {
+                taxaTransferencia = valor.multiply(BigDecimal.valueOf(0.03));
+            }
+
+        BigDecimal valorComTaxa = valor.add(taxaTransferencia);
+
+            if (contaOrigem.getSaldo().compareTo(valorComTaxa) < 0) {
                 throw new SaldoInsuficienteException("Saldo insuficiente na conta de origem: " + numeroContaOrigem);
             }
 
-            // Atualiza os saldos das contas
-            contaOrigem.setSaldo(contaOrigem.getSaldo().subtract(valor));
-            contaDestino.setSaldo(contaDestino.getSaldo().add(valor));
 
-            // Salva as atualizações nas contas
+            // Atualiza o saldo da conta de origem
+            contaOrigem.setSaldo(contaOrigem.getSaldo().subtract(valorComTaxa));
             contaCorrenteService.atualizarSaldo(contaOrigem.getNumero(), contaOrigem.getSaldo());
+            // Atualiza o saldo da conta de destino
+           contaDestino.setSaldo(contaDestino.getSaldo().add(valor));
             contaCorrenteService.atualizarSaldo(contaDestino.getNumero(), contaDestino.getSaldo());
 
             // Cria a transação e salva
@@ -147,12 +172,12 @@ public class TransacaoService {
             transacao.setTipo(TipoTransacao.TRANSFERENCIA);
             transacao.setValor(valor);
             transacao.setData(java.time.LocalDate.now());
-            transacao.setDescricao("Transferência de " + valor + " para conta " + numeroContaDestino);
+            transacao.setDescricao("Transferência de R$ " + valor + " para conta " + numeroContaDestino);
             transacao.setContaCorrente(contaOrigem); // Conta origem
             transacaoRepository.save(transacao);
 
             // Registra a transferência na auditoria
-            String logMensagem = "Transferência de " + valor + " realizada de conta " + numeroContaOrigem + " para conta " + numeroContaDestino;
+            String logMensagem = "Transferência de R$ " + valor + " realizada de conta " + numeroContaOrigem + " para conta " + numeroContaDestino;
             auditoriaService.save(logMensagem, transacao);
 
             return transacao;

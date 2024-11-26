@@ -10,6 +10,7 @@ import java.util.List;
 @Entity
 public class ContaCorrente {
 
+
     @Id
     private String numero;
 
