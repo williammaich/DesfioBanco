@@ -122,16 +122,17 @@ public class TransacaoService {
             throw new SaldoInsuficienteException("Saldo insuficiente na conta: " + numeroConta);
         }
 
-        //ajusta o saldo e, se necessário, o limite da conta
-        BigDecimal saldoDisponivel = conta.getSaldo().subtract(valorComTaxa);
-        if(saldoDisponivel.compareTo(valorComTaxa) >= 0){
-            conta.setSaldo(saldoDisponivel.subtract(taxaSaque));
-        }else {
-            BigDecimal saldoRestante = valorComTaxa.subtract(saldoDisponivel);
+        if(conta.getSaldo().compareTo(valorComTaxa) < 0){
+            conta.setSaldo(conta.getSaldo().subtract(valorComTaxa));
+        }else{
+            BigDecimal saldoRestante = valorComTaxa.subtract(conta.getSaldo());
             conta.setSaldo(BigDecimal.ZERO);
+            if(saldoRestante.compareTo(conta.getLimiteCredito()) > 0){
+                throw new SaldoInsuficienteException("O Saque excede o limite de crédito da conta: " + numeroConta);
+            }
             conta.setLimiteCredito(conta.getLimiteCredito().subtract(saldoRestante));
-        }
 
+        }
 
         // Salva a atualização do saldo na conta
         contaCorrenteService.atualizarSaldo(conta.getNumero(), conta.getSaldo());
@@ -197,7 +198,7 @@ public class TransacaoService {
             }
 
             // Atualiza o saldo e limite da conta de origem
-        BigDecimal saldoDisponivel = contaOrigem.getSaldo();
+            BigDecimal saldoDisponivel = contaOrigem.getSaldo();
             if(saldoDisponivel.compareTo(valorComTaxa) >= 0){
                 contaOrigem.setSaldo(saldoDisponivel.subtract(valorComTaxa));
             }else{
@@ -230,19 +231,4 @@ public class TransacaoService {
             return transacao;
     }
 
-
-
-
-    /**
-     * Busca todas as transações associadas a uma conta.
-     *
-     * @param contaCorrente A conta para filtrar as transações.
-     * @return Lista de transações da conta.
-     */
-    public List<Transacao> buscarPorConta(ContaCorrente contaCorrente) {
-        if (contaCorrente == null || contaCorrente.getNumero() == null) {
-            throw new IllegalArgumentException("Conta corrente inválida.");
-        }
-        return transacaoRepository.findByContaCorrente(contaCorrente);
-    }
 }

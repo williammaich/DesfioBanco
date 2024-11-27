@@ -65,7 +65,7 @@ public class ContaCorrenteService {
      * @param novoSaldo - novo saldo da conta corrente
      */
     public void atualizarSaldo(String numero, BigDecimal novoSaldo){
-       if(novoSaldo.compareTo(BigDecimal.ZERO) < 0){
+       if(novoSaldo.compareTo(BigDecimal.ZERO) < 0 ){
            throw new IllegalArgumentException("O saldo não pode ser negativo");
        }
        ContaCorrente conta = contaCorrenteRepository.findById(numero)
