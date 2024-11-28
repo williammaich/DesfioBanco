@@ -1,12 +1,13 @@
 package com.example.Banco_Magalu.controller;
 
+import com.example.Banco_Magalu.dto.ContaCorrenteDto;
 import com.example.Banco_Magalu.entity.ContaCorrente;
 import com.example.Banco_Magalu.service.ContaCorrenteService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.math.BigDecimal;
+import org.springframework.web.server.ResponseStatusException;
 
 
 @RestController
@@ -26,7 +27,7 @@ public class ContaCorrenteController {
     }
 
     @GetMapping("/{numero}")
-    public ResponseEntity<ContaCorrente> buscarConta(@Valid@PathVariable("numero") String numero){
+    public ResponseEntity<ContaCorrente> buscarConta(@PathVariable("numero") String numero){
         return contaCorrenteService.buscarConta(numero)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -34,9 +35,16 @@ public class ContaCorrenteController {
 
 
     @PatchMapping("/{numero}/atualizar-saldo")
-    public ResponseEntity<Void> atualizarSaldo(@PathVariable("numero") String numero, @RequestParam BigDecimal saldo) {
-        contaCorrenteService.atualizarSaldo(numero, saldo);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<ContaCorrenteDto> atualizarSaldo(@PathVariable("numero") String numero, @RequestBody ContaCorrente contaAtualizada) {
+        ContaCorrente conta = contaCorrenteService.buscarConta(numero)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Conta não encontrada"));
+
+        conta.setSaldo(contaAtualizada.getSaldo());
+        contaCorrenteService.atualizarSaldo(conta);
+
+        // Converte para DTO
+        ContaCorrenteDto dto = new ContaCorrenteDto(conta.getNumero(), conta.getSaldo());
+        return ResponseEntity.ok(dto);
     }
 
 }

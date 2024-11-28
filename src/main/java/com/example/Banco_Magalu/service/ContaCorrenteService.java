@@ -2,6 +2,7 @@ package com.example.Banco_Magalu.service;
 
 import com.example.Banco_Magalu.entity.ContaCorrente;
 import com.example.Banco_Magalu.repository.ContaCorrenteRepository;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -53,8 +54,11 @@ public class ContaCorrenteService {
      * @param numero - número da conta corrente a ser buscada
      * @return Optional<ContaCorrente> - objeto ContaCorrente com os dados da conta buscada ou null caso não encontre a conta
      */
-    public Optional<ContaCorrente> buscarConta(String numero){
-        return contaCorrenteRepository.findById(numero);
+    public Optional<ContaCorrente> buscarConta(String numero)
+    {
+        Optional<ContaCorrente> conta = contaCorrenteRepository.findById(numero);
+        conta.ifPresent(c -> Hibernate.initialize(c.getTransacoes()));
+        return conta;
     }
 
 
@@ -97,6 +101,10 @@ public class ContaCorrenteService {
         ContaCorrente conta = buscarConta(numero)
                 .orElseThrow(() -> new IllegalArgumentException("Conta não encontrada" + numero));
          return conta.getLimiteCredito();
+    }
+
+    public void atualizarSaldo(ContaCorrente conta) {
+        contaCorrenteRepository.save(conta);
     }
 }
 

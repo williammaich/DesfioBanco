@@ -1,6 +1,7 @@
 package com.example.Banco_Magalu.entity;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -26,7 +27,7 @@ public class ContaCorrente {
     @Column(name = "limite_maximo")
     public BigDecimal limiteMaximo;
 
-    @OneToMany(mappedBy = "contaCorrente", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "contaCorrente", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JsonManagedReference
     private List<Transacao> transacoes = new ArrayList<>();
 
@@ -37,7 +38,7 @@ public class ContaCorrente {
         this.numero = numero;
         this.saldo = saldo;
         this.limiteCredito = limiteCredito;
-        this.dataDeCriacao = dataDeCriacao;
+        this.dataDeCriacao = dataDeCriacao != null ? dataDeCriacao : LocalDate.now();
         this.transacoes = transacoes;
         this.limiteMaximo = limiteMaximo;
     }
