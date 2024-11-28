@@ -37,10 +37,10 @@ public class ContaCorrenteService {
             contaCorrente.setSaldo(BigDecimal.valueOf(0.00));
         }
         if(contaCorrente.getLimiteCredito() == null){
-            contaCorrente.setLimiteCredito(BigDecimal.valueOf(5000.00));
+            contaCorrente.setLimiteCredito(BigDecimal.valueOf(0.00));
         }
         if(contaCorrente.getLimiteMaximo() == null){
-            contaCorrente.setLimiteMaximo(BigDecimal.valueOf(5000.00));
+            contaCorrente.setLimiteMaximo(BigDecimal.valueOf(1000.00));
         }
 
         return contaCorrenteRepository.save(contaCorrente);

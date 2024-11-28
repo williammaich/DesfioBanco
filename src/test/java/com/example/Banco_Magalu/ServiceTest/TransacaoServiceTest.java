@@ -16,9 +16,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
-
 
 import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
 import static org.junit.jupiter.api.Assertions.*;
@@ -33,9 +30,6 @@ public class TransacaoServiceTest {
 
     @Autowired
     private TransacaoRepository transacaoRepository;
-
-    @Autowired
-    private ContaCorrenteService contaCorrenteService;
 
     @Autowired
     private ContaCorrenteRepository contaCorrenteRepository;
