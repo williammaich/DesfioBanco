@@ -26,7 +26,7 @@ public class Transacao {
     private String descricao;
 
     @ManyToOne
-    @JoinColumn(name = "conta_corrente_numero", nullable = false)
+    @JoinColumn(name = "conta_corrente_numero")
     @JsonBackReference
     private ContaCorrente contaCorrente;
 

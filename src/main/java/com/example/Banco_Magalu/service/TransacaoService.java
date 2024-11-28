@@ -42,8 +42,8 @@ public class TransacaoService {
                 .orElseThrow(() -> new ContaNaoEncontradaException("Conta não encontrada: " + numeroConta));
 
         // Verifica se o valor do depósito é maior que zero
-        if (valor.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Valor do depósito deve ser maior que zero.");
+        if (valor == null ||valor.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("O valor do depósito não pode ser nulo ou negativo");
         }
 
         // Recupera o limite máximo da conta
@@ -109,8 +109,8 @@ public class TransacaoService {
                .orElseThrow(() -> new ContaNaoEncontradaException("Conta não encontrada: " + numeroConta));
 
         //verifica se o valor do saque é maior que zero
-        if (valor.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Valor do saque deve ser maior que zero.");
+        if (valor == null ||valor.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("O valor do saque não pode ser nulo ou negativo");
         }
 
         BigDecimal taxaSaque = valor.multiply(BigDecimal.valueOf(0.01));
@@ -118,13 +118,15 @@ public class TransacaoService {
 
         BigDecimal limiteDisponivel = conta.getSaldo().add(conta.getLimiteCredito());
 
-        if (limiteDisponivel.compareTo(valorComTaxa) < 0 && limiteDisponivel.compareTo(valor) < 0) {
+        if (limiteDisponivel.compareTo(valorComTaxa) < 0) {
             throw new SaldoInsuficienteException("Saldo insuficiente na conta: " + numeroConta);
         }
 
-        if(conta.getSaldo().compareTo(valorComTaxa) < 0){
-            conta.setSaldo(conta.getSaldo().subtract(valorComTaxa));
+        BigDecimal saldoDisponivel   = conta.getSaldo();
+        if(saldoDisponivel.compareTo(valorComTaxa) >= 0){
+            conta.setSaldo(saldoDisponivel.subtract(valorComTaxa));
         }else{
+
             BigDecimal saldoRestante = valorComTaxa.subtract(conta.getSaldo());
             conta.setSaldo(BigDecimal.ZERO);
             if(saldoRestante.compareTo(conta.getLimiteCredito()) > 0){
@@ -171,9 +173,13 @@ public class TransacaoService {
     @Transactional
     public Transacao realizarTransferencia(String numeroContaOrigem, String numeroContaDestino, BigDecimal valor) {
 
-            if (valor.compareTo(BigDecimal.ZERO) <= 0) {
-                throw new IllegalArgumentException("Valor da transferência deve ser maior que zero.");
+            if (valor == null ||valor.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("O valor da transferência não pode ser nulo ou negativo");
             }
+
+            if (numeroContaOrigem.equals(numeroContaDestino)){
+                throw new IllegalArgumentException("Conta de origem e destino não podem ser iguais.");
+                }
 
             ContaCorrente contaOrigem = contaCorrenteService.buscarConta(numeroContaOrigem)
                     .orElseThrow(() -> new ContaNaoEncontradaException("Conta de origem não encontrada: " + numeroContaOrigem));

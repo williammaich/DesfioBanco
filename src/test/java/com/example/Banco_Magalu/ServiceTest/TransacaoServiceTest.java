@@ -3,21 +3,26 @@ package com.example.Banco_Magalu.ServiceTest;
 import com.example.Banco_Magalu.entity.ContaCorrente;
 import com.example.Banco_Magalu.entity.TipoTransacao;
 import com.example.Banco_Magalu.entity.Transacao;
+import com.example.Banco_Magalu.exception.SaldoInsuficienteException;
 import com.example.Banco_Magalu.repository.ContaCorrenteRepository;
 import com.example.Banco_Magalu.repository.TransacaoRepository;
 import com.example.Banco_Magalu.service.ContaCorrenteService;
 import com.example.Banco_Magalu.service.TransacaoService;
 import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
+
 
 import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 @SpringBootTest
 @Transactional
@@ -62,6 +67,70 @@ public class TransacaoServiceTest {
     }
 
     /**
+     * Teste para deposito valor nulo
+     */
+    @Test
+    public void testDepositoValorNulo() {
+        ContaCorrente conta = new ContaCorrente(
+                "12345",
+                BigDecimal.valueOf(10), // saldo inicial
+                BigDecimal.valueOf(300), // limite atual
+                LocalDate.now(),
+                BigDecimal.valueOf(500), // limite máximo
+                null);
+        contaCorrenteRepository.save(conta);
+
+        // Tentando realizar o depósito com valor nulo
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> transacaoService.realizarDeposito(conta.getNumero(), null),
+                "Deveria lançar IllegalArgumentException para valor nulo"
+        );
+
+        // Verifica a mensagem da exceção
+        assertEquals("O valor do depósito não pode ser nulo ou negativo", exception.getMessage());
+
+        // Recupera a conta e valida se o saldo e limite não foram alterados
+        ContaCorrente contaRecuperada = contaCorrenteRepository.findById(conta.getNumero())
+                .orElseThrow();
+        assertEquals(BigDecimal.valueOf(10), contaRecuperada.getSaldo(), "O saldo não deve ser alterado");
+        assertEquals(BigDecimal.valueOf(300), contaRecuperada.getLimiteCredito(), "O limite de crédito deve ser zero.");
+
+    }
+
+    /**
+     * Teste para deposito valor negativo
+     */
+    @Test
+    public void testDepositoValorNegativo() {
+        ContaCorrente conta = new ContaCorrente(
+                "12345",
+                BigDecimal.valueOf(10), // saldo inicial
+                BigDecimal.valueOf(300), // limite atual
+                LocalDate.now(),
+                BigDecimal.valueOf(500), // limite máximo
+                null);
+        contaCorrenteRepository.save(conta);
+
+        // Tentando realizar o depósito com valor nulo
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> transacaoService.realizarDeposito(conta.getNumero(), BigDecimal.valueOf(-100)),
+                "Deveria lançar IllegalArgumentException para valor negativo"
+        );
+
+        // Verifica a mensagem da exceção
+        assertEquals("O valor do depósito não pode ser nulo ou negativo", exception.getMessage());
+
+        // Recupera a conta e valida se o saldo e limite não foram alterados
+        ContaCorrente contaRecuperada = contaCorrenteRepository.findById(conta.getNumero())
+                .orElseThrow();
+        assertEquals(BigDecimal.valueOf(10), contaRecuperada.getSaldo(), "O saldo não deve ser alterado");
+        assertEquals(BigDecimal.valueOf(300), contaRecuperada.getLimiteCredito(), "O limite de crédito deve ser zero.");
+
+    }
+
+    /**
      * Teste para saque em conta.
      */
     @Test
@@ -81,10 +150,10 @@ public class TransacaoServiceTest {
                 valorSaque);
 
         ContaCorrente contaAtualizada = contaCorrenteRepository.findById(conta.getNumero())
-                .orElseThrow(() -> new RuntimeException("Conta não encontrada após o saque"));
+                .orElseThrow(() -> new RuntimeException("Conta não encontrada para o saque"));
 
         // Verificações
-        assertEquals(0, contaAtualizada.getSaldo().compareTo(BigDecimal.valueOf(898)), "O saldo deve ser decrementado com o valor do saque.");
+        assertEquals(1, contaAtualizada.getSaldo().compareTo(BigDecimal.valueOf(898)), "O saldo deve ser decrementado com o valor do saque.");
         assertEquals(BigDecimal.valueOf(300), contaAtualizada.getLimiteCredito(),
                 "O limite de crédito não deve ser alterado.");
         assertNotNull(transacaoSaque, "A transação não deve ser nula.");
@@ -100,7 +169,7 @@ public class TransacaoServiceTest {
         ContaCorrente conta = new ContaCorrente(
                 "1234567",
                 BigDecimal.valueOf(1000), // Saldo inicial
-                BigDecimal.valueOf(100),  // Limite de crédito usado
+                BigDecimal.valueOf(600),  // Limite de crédito usado
                 LocalDate.now(),
                 BigDecimal.valueOf(600),  // Limite de crédito total
                 null);
@@ -111,15 +180,470 @@ public class TransacaoServiceTest {
                 conta.getNumero(),valorSaque);
 
         ContaCorrente contaAtualizada = contaCorrenteRepository.findById(conta.getNumero())
-                .orElseThrow(() -> new RuntimeException("Conta não encontrada após o saque"));
+                .orElseThrow(() -> new RuntimeException("Conta não encontrada para o saque"));
 
         assertEquals(BigDecimal.ZERO, contaAtualizada.getSaldo(), "O saldo deve ser zerado após o saque.");
-        assertEquals(BigDecimal.valueOf(500.1),contaAtualizada.getLimiteCredito(),"O limite de crédito deve ser atualizado com o valor do saque.");
+        assertEquals(-1, contaAtualizada.getSaldo().compareTo(BigDecimal.valueOf(389)),"O limite de crédito deve ser atualizado com o valor do saque.");
         assertNotNull(transacaoSaque, "A transação não deve ser nula.");
         assertEquals(TipoTransacao.SAQUE, transacaoSaque.getTipo(), "O tipo da transação deve ser SAQUE.");
         assertEquals(valorSaque, transacaoSaque.getValor(), "O valor da transação deve corresponder ao saque realizado.");
     }
 
+    /**
+     * Teste de saque de conta com valor total do saldo e limite de credito.
+     */
+    @Test
+    public void testSaqueContaValorTotalSaldoECredito() {
+        ContaCorrente conta = new ContaCorrente(
+                "12345678",
+                BigDecimal.valueOf(1000), // Saldo inicial
+                BigDecimal.valueOf(515),  // Limite de crédito usado
+                LocalDate.now(),
+                BigDecimal.valueOf(600),  // Limite de crédito total
+                null);
+        contaCorrenteRepository.save(conta);
+
+
+        BigDecimal valorSaque = BigDecimal.valueOf(1500); // Saque maior que o saldo e limite de credito
+        Transacao transacaoSaque = transacaoService.realizarSaque(
+                conta.getNumero(),
+                valorSaque);
+        ContaCorrente contaAtualizada = contaCorrenteRepository.findById(conta.getNumero())
+                .orElseThrow(() -> new RuntimeException("Conta não encontrada para o saque"));
+
+        assertEquals(BigDecimal.ZERO, contaAtualizada.getSaldo(), "O saldo deve ser zerado após o saque.");
+        assertEquals(0, contaAtualizada.getSaldo().compareTo(BigDecimal.ZERO), "O limite de crédito deve ser zerado após o saque.");
+        assertNotNull(transacaoSaque, "A transação não deve ser nula.");
+        assertEquals(TipoTransacao.SAQUE, transacaoSaque.getTipo(), "O tipo da transação deve ser SAQUE.");
+        assertEquals(valorSaque, transacaoSaque.getValor(), "O valor da transação deve corresponder ao saque realizado.");
+    }
+
+    /**
+    * Teste de saque de conta com valor negativo.
+     */
+    @Test
+    public void testSaqueContaValorNegativo() {
+    ContaCorrente conta = new ContaCorrente(
+            "12345",
+            BigDecimal.valueOf(10), // saldo inicial
+            BigDecimal.valueOf(300), // limite atual
+            LocalDate.now(),
+            BigDecimal.valueOf(500), // limite máximo
+            null);
+        contaCorrenteRepository.save(conta);
+
+
+    IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> transacaoService.realizarSaque(conta.getNumero(), BigDecimal.valueOf(-100)),
+            "Deveria lançar IllegalArgumentException para valor negativo"
+    );
+
+    // Verifica a mensagem da exceção
+    assertEquals("O valor do saque não pode ser nulo ou negativo", exception.getMessage());
+
+    // Recupera a conta e valida se o saldo e limite não foram alterados
+    ContaCorrente contaRecuperada = contaCorrenteRepository.findById(conta.getNumero())
+            .orElseThrow();
+    assertEquals(BigDecimal.valueOf(10), contaRecuperada.getSaldo(), "O saldo não deve ser alterado");
+    assertEquals(BigDecimal.valueOf(300), contaRecuperada.getLimiteCredito(), "O limite de crédito deve ser zero.");
 
 }
+
+/**
+ * Teste de saque com valor nulo
+ */
+@Test
+public void testSaqueContaValorNulo() {
+    ContaCorrente conta = new ContaCorrente(
+            "12345",
+            BigDecimal.valueOf(10), // saldo inicial
+            BigDecimal.valueOf(300), // limite atual
+            LocalDate.now(),
+            BigDecimal.valueOf(500), // limite máximo
+            null);
+    contaCorrenteRepository.save(conta);
+
+    IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> transacaoService.realizarDeposito(conta.getNumero(), null),
+            "Deveria lançar IllegalArgumentException para valor nulo"
+    );
+
+    // Verifica a mensagem da exceção
+    assertEquals("O valor do depósito não pode ser nulo ou negativo", exception.getMessage());
+
+    // Recupera a conta e valida se o saldo e limite não foram alterados
+    ContaCorrente contaRecuperada = contaCorrenteRepository.findById(conta.getNumero())
+            .orElseThrow();
+    assertEquals(BigDecimal.valueOf(10), contaRecuperada.getSaldo(), "O saldo não deve ser alterado");
+    assertEquals(BigDecimal.valueOf(300), contaRecuperada.getLimiteCredito(), "O limite de crédito deve ser zero.");
+
+}
+
+    /**
+     * Teste de saque de conta com valor maior que o saldo e limite de credito.
+     */
+
+    @Test
+    public void testSaqueContaValorMaiorSaldoECredito() {
+        ContaCorrente conta = new ContaCorrente(
+                "123456789",
+                BigDecimal.valueOf(1000), // Saldo inicial
+                BigDecimal.valueOf(400),  // Limite de crédito usado
+                LocalDate.now(),
+                BigDecimal.valueOf(600),  // Limite de crédito total
+                null);
+        contaCorrenteRepository.save(conta);
+
+        BigDecimal valorSaque = BigDecimal.valueOf(1500); // Saque maior que o saldo e limite de credito
+
+        SaldoInsuficienteException exception = assertThrows(
+                SaldoInsuficienteException.class,
+                () -> transacaoService.realizarSaque(conta.getNumero(), valorSaque),
+                "Deveria lançar SaldoInsuficienteException para saque acima do limite"
+        );
+
+        // Valida a mensagem da exceção
+        Assertions.assertEquals(
+                "Saldo insuficiente na conta: " + conta.getNumero(),
+                exception.getMessage(),
+                "A mensagem da exceção deve corresponder"
+        );
+
+        // Recupera a conta após a tentativa de saque
+        ContaCorrente contaRecuperada = contaCorrenteRepository.findById(conta.getNumero())
+                .orElseThrow(() -> new RuntimeException("Conta não encontrada para o saque"));
+
+        // Verifica que o saldo e o limite não foram alterados
+        Assertions.assertEquals(
+                BigDecimal.valueOf(1000),
+                contaRecuperada.getSaldo(),
+                "O saldo deve permanecer inalterado após o saque inválido"
+        );
+        Assertions.assertEquals(
+                BigDecimal.valueOf(400),
+                contaRecuperada.getLimiteCredito(),
+                "O limite de crédito deve permanecer inalterado após o saque inválido"
+        );
+
+        // Verifica que nenhuma transação foi criada
+        Assertions.assertFalse(
+                transacaoRepository.findAll().isEmpty(),
+                "Nenhuma transação deve ser registrada para saque inválido"
+        );
+    }
+
+    /**
+     * Teste de transferencia de conta.
+     */
+    @Test
+    public void testTransferenciaConta() {
+        ContaCorrente conta1 = new ContaCorrente(
+                "123456",
+                BigDecimal.valueOf(1000), // Saldo inicial
+                BigDecimal.valueOf(500),  // Limite de crédito usado
+                LocalDate.now(),
+                BigDecimal.valueOf(600),  // Limite de crédito total
+                null);
+        contaCorrenteRepository.save(conta1);
+
+        ContaCorrente conta2 = new ContaCorrente(
+                "654321",
+                BigDecimal.valueOf(1000), // Saldo inicial
+                BigDecimal.valueOf(500),  // Limite de crédito usado
+                LocalDate.now(),
+                BigDecimal.valueOf(600),  // Limite de crédito total
+                null);
+        contaCorrenteRepository.save(conta2);
+
+        BigDecimal valorTransferencia = BigDecimal.valueOf(500);
+        Transacao transacaoTransferencia = transacaoService.realizarTransferencia(
+                conta1.getNumero(),
+                conta2.getNumero(),
+                valorTransferencia);
+
+        ContaCorrente conta1Atualizada = contaCorrenteRepository.findById(conta1.getNumero())
+                .orElseThrow(() -> new RuntimeException("Conta não encontrada para a transferencia"));
+    ContaCorrente conta2Atualizada = contaCorrenteRepository.findById(conta2.getNumero())
+                .orElseThrow(() -> new RuntimeException("Conta não encontrada para a transferencia"));
+
+        // Verificações
+        assertEquals(0, conta1Atualizada.getSaldo().compareTo(BigDecimal.valueOf(490)), "O saldo da conta 1 deve ser decrementado com o valor da transferencia.");
+        assertEquals(BigDecimal.valueOf(1500), conta2Atualizada.getSaldo(), "O saldo da conta 2 deve ser incrementado com o valor da transferencia.");
+        assertEquals(BigDecimal.valueOf(500), conta1Atualizada.getLimiteCredito(), "O limite de crédito da conta 1 deve permanecer inalterado.");
+        assertEquals(BigDecimal.valueOf(500), conta2Atualizada.getLimiteCredito(), "O limite de crédito da conta 2 deve permanecer inalterado.");
+        assertNotNull(transacaoTransferencia, "A transação não deve ser nula.");
+        assertEquals(TipoTransacao.TRANSFERENCIA, transacaoTransferencia.getTipo(), "O tipo da transação deve ser TRANSFERENCIA.");
+        assertEquals(valorTransferencia, transacaoTransferencia.getValor(), "O valor da transação deve corresponder à transferencia realizada.");
+
+    }
+
+    /**
+     * Teste de transferencia de conta com valor maior que o saldo e usando o limite de credito.
+     */
+    @Test
+    public void testTransferenciaContaValorMaiorSaldoECredito() {
+        ContaCorrente conta1 = new ContaCorrente(
+                "1234567",
+                BigDecimal.valueOf(1000), // Saldo inicial
+                BigDecimal.valueOf(500),  // Limite de crédito usado
+                LocalDate.now(),
+                BigDecimal.valueOf(600),  // Limite de crédito total
+                null);
+        contaCorrenteRepository.save(conta1);
+
+        ContaCorrente conta2 = new ContaCorrente(
+                "654321",
+                BigDecimal.valueOf(1000), // Saldo inicial
+                BigDecimal.valueOf(500),  // Limite de crédito usado
+                LocalDate.now(),
+                BigDecimal.valueOf(600),  // Limite de crédito total
+                null);
+        contaCorrenteRepository.save(conta2);
+        BigDecimal valorTransferencia = BigDecimal.valueOf(1100);
+        Transacao transacaoTransferencia = transacaoService.realizarTransferencia(
+                conta1.getNumero(),
+                conta2.getNumero(),
+                valorTransferencia);
+
+        ContaCorrente conta1Atualizada = contaCorrenteRepository.findById(conta1.getNumero())
+                .orElseThrow(() -> new RuntimeException("Conta não encontrada para a transferencia"));
+        ContaCorrente conta2Atualizada = contaCorrenteRepository.findById(conta2.getNumero())
+                .orElseThrow(() -> new RuntimeException("Conta não encontrada para a transferencia"));
+
+        // Verificações
+        assertEquals(BigDecimal.ZERO, conta1Atualizada.getSaldo(), "O saldo da conta 1 deve ser decrementado com o valor da transferencia e ficando Zero.");
+        assertEquals(BigDecimal.valueOf(2100), conta2Atualizada.getSaldo(), "O saldo da conta 2 deve ser incrementado com o valor da transferencia.");
+        assertEquals(0,conta1Atualizada.getLimiteCredito().compareTo(BigDecimal.valueOf(378)),  "O limite de crédito foi alterado com o valor da transferencia.");
+        assertEquals(BigDecimal.valueOf(500), conta2Atualizada.getLimiteCredito(), "O limite de crédito da conta 2 deve permanecer inalterado.");
+        assertNotNull(transacaoTransferencia, "A transação não deve ser nula.");
+        assertEquals(TipoTransacao.TRANSFERENCIA, transacaoTransferencia.getTipo(), "O tipo da transação deve ser TRANSFERENCIA.");
+        assertEquals(valorTransferencia, transacaoTransferencia.getValor(), "O valor da transação deve corresponder à transferencia realizada.");
+    }
+
+    /**
+     * Teste de transferencia de conta com valor maior que o saldo e limite de credito.
+     */
+    @Test
+    public void testTransferenciaContaValorTotalSaldoECredito() {
+        ContaCorrente conta1 = new ContaCorrente(
+                "12345678",
+                BigDecimal.valueOf(1000), // Saldo inicial
+                BigDecimal.valueOf(500),  // Limite de crédito usado
+                LocalDate.now(),
+                BigDecimal.valueOf(600),  // Limite de crédito total
+                null);
+        contaCorrenteRepository.save(conta1);
+
+        ContaCorrente conta2 = new ContaCorrente(
+                "654321",
+                BigDecimal.valueOf(1000), // Saldo inicial
+                BigDecimal.valueOf(500),  // Limite de crédito usado
+                LocalDate.now(),
+                BigDecimal.valueOf(600),  // Limite de crédito total
+                null);
+        contaCorrenteRepository.save(conta2);
+
+
+
+        BigDecimal valorTransferencia = BigDecimal.valueOf(2500);
+
+        // Executa a transferência e valida que a exceção é lançada
+        SaldoInsuficienteException exception = assertThrows(
+                SaldoInsuficienteException.class,
+                () -> transacaoService.realizarTransferencia(conta1.getNumero(), conta2.getNumero(), valorTransferencia),
+                "Deveria lançar SaldoInsuficienteException para transferência acima do saldo e limite"
+        );
+
+        // Valida a mensagem da exceção
+        Assertions.assertEquals(
+                "Saldo insuficiente na conta de origem: " + conta1.getNumero(),
+                exception.getMessage(),
+                "A mensagem da exceção deve corresponder"
+        );
+
+        // Recupera a conta de origem e destino após a tentativa de transferência
+        ContaCorrente contaOrigemAtualizada = contaCorrenteRepository.findById(conta1.getNumero())
+                .orElseThrow(() -> new RuntimeException("Conta origem não encontrada após a transferência"));
+        ContaCorrente contaDestinoAtualizada = contaCorrenteRepository.findById(conta2.getNumero())
+                .orElseThrow(() -> new RuntimeException("Conta destino não encontrada após a transferência"));
+
+        // Verifica que o saldo e o limite da conta origem não foram alterados
+        Assertions.assertEquals(
+                BigDecimal.valueOf(1000),
+                contaOrigemAtualizada.getSaldo(),
+                "O saldo da conta origem deve permanecer inalterado após transferência inválida"
+        );
+        Assertions.assertEquals(
+                BigDecimal.valueOf(500),
+                contaOrigemAtualizada.getLimiteCredito(),
+                "O limite de crédito da conta origem deve permanecer inalterado após transferência inválida"
+        );
+
+        // Verifica que o saldo da conta destino não foi alterado
+        Assertions.assertEquals(
+                BigDecimal.valueOf(1000),
+                contaDestinoAtualizada.getSaldo(),
+                "O saldo da conta destino deve permanecer inalterado após transferência inválida"
+        );
+
+        // Verifica que nenhuma transação foi criada
+        Assertions.assertFalse(
+                transacaoRepository.findAll().isEmpty(),
+                "Nenhuma transação deve ser registrada para transferência inválida"
+        );
+    }
+
+    /**
+     * Teste de transferencia de conta com conta origem e destino iguais.
+     */
+    @Test
+    public void testTransferenciaContaContaOrigemIgualDestino() {
+        ContaCorrente conta1 = new ContaCorrente(
+                "12345",
+                BigDecimal.valueOf(1000), // Saldo inicial
+                BigDecimal.valueOf(500),  // Limite de crédito usado
+                LocalDate.now(),
+                BigDecimal.valueOf(600),  // Limite de crédito total
+                null);
+        contaCorrenteRepository.save(conta1);
+
+        ContaCorrente conta2 = new ContaCorrente(
+                "12345",
+                BigDecimal.valueOf(1000), // Saldo inicial
+                BigDecimal.valueOf(500),  // Limite de crédito usado
+                LocalDate.now(),
+                BigDecimal.valueOf(600),  // Limite de crédito total
+                null);
+        contaCorrenteRepository.save(conta2);
+
+        BigDecimal valorTransferencia = BigDecimal.valueOf(500);
+
+        // Executa a transferência e valida que a exceção é lançada
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> transacaoService.realizarTransferencia(conta1.getNumero(), conta2.getNumero(), valorTransferencia),
+                "Deveria lançar IllegalArgumentException para transferência de conta origem e destino iguais"
+        );
+
+        // Valida a mensagem da exceção
+        Assertions.assertEquals(
+                "Conta de origem e destino não podem ser iguais.",
+                exception.getMessage(),
+                "A mensagem da exceção deve corresponder"
+        );
+
+        // Recupera a conta de origem e destino após a tentativa de transferência
+        ContaCorrente contaOrigemAtualizada = contaCorrenteRepository.findById(conta1.getNumero())
+                .orElseThrow(() -> new RuntimeException("Conta origem não encontrada após a transferência"));
+        ContaCorrente contaDestinoAtualizada = contaCorrenteRepository.findById(conta2.getNumero())
+                .orElseThrow(() -> new RuntimeException("Conta destino não encontrada após a transferência"));
+
+        // Verifica que o saldo e o limite da conta origem não foram alterados
+        Assertions.assertEquals(
+                BigDecimal.valueOf(1000),
+                contaOrigemAtualizada.getSaldo(),
+                "O saldo da conta origem deve permanecer inalterado após transferência inválida"
+        );
+        Assertions.assertEquals(
+                BigDecimal.valueOf(500),
+                contaOrigemAtualizada.getLimiteCredito(),
+                "O limite de crédito da conta origem deve permanecer inalterado após transferência inválida"
+        );
+
+        // Verifica que o saldo da conta destino não foi alterado
+        Assertions.assertEquals(
+                BigDecimal.valueOf(1000),
+                contaDestinoAtualizada.getSaldo(),
+                "O saldo da conta destino deve permanecer inalterado após transferência inválida"
+        );
+
+    }
+
+    /**
+     * Teste transferencia de conta com o valor negativo.
+     */
+    @Test
+    public void testTransferenciaContaValorNegativo() {
+        ContaCorrente conta1 = new ContaCorrente(
+                "123456789",
+                BigDecimal.valueOf(1000), // Saldo inicial
+                BigDecimal.valueOf(500),  // Limite de crédito usado
+                LocalDate.now(),
+                BigDecimal.valueOf(600),  // Limite de crédito total
+                null);
+        contaCorrenteRepository.save(conta1);
+
+        ContaCorrente conta2 = new ContaCorrente(
+                "54321",
+                BigDecimal.valueOf(1000), // Saldo inicial
+                BigDecimal.valueOf(500),  // Limite de crédito usado
+                LocalDate.now(),
+                BigDecimal.valueOf(600),  // Limite de crédito total
+                null);
+        contaCorrenteRepository.save(conta2);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> transacaoService.realizarTransferencia(conta1.getNumero(),conta2.getNumero(), BigDecimal.valueOf(-100)),
+                "Deveria lançar IllegalArgumentException para valor negativo"
+        );
+
+        // Verifica a mensagem da exceção
+        assertEquals("O valor da transferência não pode ser nulo ou negativo", exception.getMessage());
+
+        // Recupera a conta e valida se o saldo e limite não foram alterados
+        ContaCorrente contaRecuperada = contaCorrenteRepository.findById(conta1.getNumero())
+                .orElseThrow();
+        ContaCorrente contaDestinoAtualizada = contaCorrenteRepository.findById(conta2.getNumero()).orElseThrow();
+        assertEquals(BigDecimal.valueOf(1000), contaRecuperada.getSaldo(), "O saldo não deve ser alterado");
+        assertEquals(BigDecimal.valueOf(500), contaRecuperada.getLimiteCredito(), "O limite de crédito deve ser zero.");
+        assertEquals(BigDecimal.valueOf(1000), contaDestinoAtualizada.getSaldo(), "O saldo não deve ser alterado");
+        assertEquals(BigDecimal.valueOf(500), contaDestinoAtualizada.getLimiteCredito(), "O limite de crédito deve ser zero.");
+    }
+
+    /**
+     * Teste de Transferencia com valor nulo.
+     */
+    @Test
+    public void testTransferenciaContaValorNulo() {
+        ContaCorrente conta1 = new ContaCorrente(
+                "123456789",
+                BigDecimal.valueOf(1000), // Saldo inicial
+                BigDecimal.valueOf(500),  // Limite de crédito usado
+                LocalDate.now(),
+                BigDecimal.valueOf(600),  // Limite de crédito total
+                null);
+        contaCorrenteRepository.save(conta1);
+
+        ContaCorrente conta2 = new ContaCorrente(
+                "54321",
+                BigDecimal.valueOf(1000), // Saldo inicial
+                BigDecimal.valueOf(500),  // Limite de crédito usado
+                LocalDate.now(),
+                BigDecimal.valueOf(600),  // Limite de crédito total
+                null);
+        contaCorrenteRepository.save(conta2);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> transacaoService.realizarTransferencia(conta1.getNumero(),conta2.getNumero(), null),
+                "Deveria lançar IllegalArgumentException para valor negativo"
+        );
+
+        // Verifica a mensagem da exceção
+        assertEquals("O valor da transferência não pode ser nulo ou negativo", exception.getMessage());
+
+        // Recupera a conta e valida se o saldo e limite não foram alterados
+        ContaCorrente contaRecuperada = contaCorrenteRepository.findById(conta1.getNumero())
+                .orElseThrow();
+        ContaCorrente contaDestinoAtualizada = contaCorrenteRepository.findById(conta2.getNumero()).orElseThrow();
+        assertEquals(BigDecimal.valueOf(1000), contaRecuperada.getSaldo(), "O saldo não deve ser alterado");
+        assertEquals(BigDecimal.valueOf(500), contaRecuperada.getLimiteCredito(), "O limite de crédito deve ser zero.");
+        assertEquals(BigDecimal.valueOf(1000), contaDestinoAtualizada.getSaldo(), "O saldo não deve ser alterado");
+        assertEquals(BigDecimal.valueOf(500), contaDestinoAtualizada.getLimiteCredito(), "O limite de crédito deve ser zero.");
+    }
+}
+
 

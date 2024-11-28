@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -27,7 +28,7 @@ public class ContaCorrente {
 
     @OneToMany(mappedBy = "contaCorrente", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
-    private List<Transacao> transacoes;
+    private List<Transacao> transacoes = new ArrayList<>();
 
 
     public ContaCorrente() { }
