@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
-import java.util.List;
 
 @Service
 public class TransacaoService {
@@ -21,7 +20,6 @@ public class TransacaoService {
     private final ContaCorrenteService contaCorrenteService;
     private final AuditoriaService auditoriaService;
 
-    // Injeção de dependências via construtor
     public TransacaoService(TransacaoRepository transacaoRepository, ContaCorrenteService contaCorrenteService, AuditoriaService auditoriaService) {
         this.transacaoRepository = transacaoRepository;
         this.contaCorrenteService = contaCorrenteService;
@@ -37,44 +35,37 @@ public class TransacaoService {
      */
     @Transactional
     public Transacao realizarDeposito(String numeroConta, BigDecimal valor) {
-        // Verifica se a conta existe
+
         ContaCorrente conta = contaCorrenteService.buscarConta(numeroConta)
                 .orElseThrow(() -> new ContaNaoEncontradaException("Conta não encontrada: " + numeroConta));
 
-        // Verifica se o valor do depósito é maior que zero
         if (valor == null ||valor.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("O valor do depósito não pode ser nulo ou negativo");
         }
 
-        // Recupera o limite máximo da conta
-        BigDecimal limiteMaximo = conta.getLimiteMaximo(); // Limite máximo definido
-        BigDecimal limiteCreditoAtual = conta.getLimiteCredito(); // Limite de crédito atual
-        BigDecimal saldoAtual = conta.getSaldo(); // Saldo da conta
+        BigDecimal limiteMaximo = conta.getLimiteMaximo();
+        BigDecimal limiteCreditoAtual = conta.getLimiteCredito();
+        BigDecimal saldoAtual = conta.getSaldo();
 
-        // Verifica quanto do limite ainda está disponível
         BigDecimal limiteDisponivel = limiteMaximo.subtract(limiteCreditoAtual);
 
-        // Inicializa as variáveis para o limite e saldo que serão atualizadas
         BigDecimal valorParaLimite = BigDecimal.ZERO;
         BigDecimal valorParaSaldo = valor;
 
-        // Se o limite disponível for maior que zero, aloca o depósito no limite
         if (limiteDisponivel.compareTo(BigDecimal.ZERO) > 0) {
-            valorParaLimite = valor.min(limiteDisponivel); // Aloca o mínimo entre o valor do depósito e o limite disponível
-            valorParaSaldo = valor.subtract(valorParaLimite); // O restante vai para o saldo
+            valorParaLimite = valor.min(limiteDisponivel);
+            valorParaSaldo = valor.subtract(valorParaLimite);
 
-            // Atualiza o limite de crédito
-            conta.setLimiteCredito(limiteCreditoAtual.add(valorParaLimite)); // Atualiza o limite de crédito
+            conta.setLimiteCredito(limiteCreditoAtual.add(valorParaLimite));
             contaCorrenteService.atualizarLimite(conta.getNumero(), conta.getLimiteCredito());
         }
 
-        // Agora, aloca o restante do valor diretamente no saldo, se houver valor restante
         if (valorParaSaldo.compareTo(BigDecimal.ZERO) > 0) {
-            conta.setSaldo(saldoAtual.add(valorParaSaldo)); // Atualiza o saldo com o valor restante
+            conta.setSaldo(saldoAtual.add(valorParaSaldo));
             contaCorrenteService.atualizarSaldo(conta.getNumero(), conta.getSaldo());
         }
 
-        // Cria a transação e salva
+
         Transacao transacao = new Transacao();
         transacao.setTipo(TipoTransacao.DEPOSITO);
         transacao.setValor(valor);
@@ -86,7 +77,7 @@ public class TransacaoService {
         transacao.setContaCorrente(conta);
         transacaoRepository.save(transacao);
 
-        // Salva o registro do depósito na auditoria
+
         String logMensagem = "Depósito na conta " + numeroConta + " na data de " + java.time.LocalDate.now() +
                 ", Restituição de limite de crédito: R$ " + df.format(valorParaLimite) +
                 ", Saldo atual: R$ " + df.format(conta.getSaldo()) +
@@ -104,11 +95,10 @@ public class TransacaoService {
      */
     @Transactional
     public Transacao realizarSaque(String numeroConta, BigDecimal valor){
-        //verifica se a conta existe
+
         ContaCorrente conta = contaCorrenteService.buscarConta(numeroConta)
                .orElseThrow(() -> new ContaNaoEncontradaException("Conta não encontrada: " + numeroConta));
 
-        //verifica se o valor do saque é maior que zero
         if (valor == null ||valor.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("O valor do saque não pode ser nulo ou negativo");
         }
@@ -136,12 +126,9 @@ public class TransacaoService {
 
         }
 
-        // Salva a atualização do saldo na conta
         contaCorrenteService.atualizarSaldo(conta.getNumero(), conta.getSaldo());
         contaCorrenteService.atualizarLimite(conta.getNumero(), conta.getLimiteCredito());
 
-
-        // Cria a transação e salva
         Transacao transacao = new Transacao();
         transacao.setTipo(TipoTransacao.SAQUE);
         transacao.setValor(valor);
@@ -152,7 +139,6 @@ public class TransacaoService {
         transacao.setContaCorrente(conta);
         transacaoRepository.save(transacao);
 
-        // Salva registro do saque na auditoria
         String logMensagem = "Saque de R$ "+ valor + " realizado na conta "+ numeroConta + ", na data de " + java.time.LocalDate.now()
                 + ". Taxa de saque: R$ " +df.format( taxaSaque)+ ". Limite disponível: R$ "+ df.format( conta.getLimiteCredito());
         auditoriaService.save(logMensagem, transacao);
@@ -160,7 +146,6 @@ public class TransacaoService {
         return transacao;
 
     }
-
 
     /**
      * Realiza a transferência de valores entre contas.
@@ -197,13 +182,12 @@ public class TransacaoService {
                 throw new SaldoInsuficienteException("Saldo insuficiente na conta de origem: " + numeroContaOrigem);
             }
 
-            // recalcula a taxa caso o limite seja usado
+
             if(contaOrigem.getLimiteCredito().compareTo(BigDecimal.ZERO) > 0){
                 taxaTransferencia = valor.multiply(BigDecimal.valueOf(0.02));
                 valorComTaxa = valor.add(taxaTransferencia);
             }
 
-            // Atualiza o saldo e limite da conta de origem
             BigDecimal saldoDisponivel = contaOrigem.getSaldo();
             if(saldoDisponivel.compareTo(valorComTaxa) >= 0){
                 contaOrigem.setSaldo(saldoDisponivel.subtract(valorComTaxa));
@@ -213,24 +197,21 @@ public class TransacaoService {
                 contaOrigem.setLimiteCredito(contaOrigem.getLimiteCredito().subtract(saldoRestante));
             }
 
-            // Atualiza o saldo da conta de origem e limite se for usado
-
             contaCorrenteService.atualizarSaldo(contaOrigem.getNumero(), contaOrigem.getSaldo());
             contaCorrenteService.atualizarLimite(contaOrigem.getNumero(), contaOrigem.getLimiteCredito());
-            // Atualiza o saldo da conta de destino
+
            contaDestino.setSaldo(contaDestino.getSaldo().add(valor));
             contaCorrenteService.atualizarSaldo(contaDestino.getNumero(), contaDestino.getSaldo());
 
-            // Cria a transação e salva
+
             Transacao transacao = new Transacao();
             transacao.setTipo(TipoTransacao.TRANSFERENCIA);
             transacao.setValor(valor);
             transacao.setData(java.time.LocalDate.now());
             transacao.setDescricao("Transferência de R$ " + valor +" para conta " + numeroContaDestino +" na data de "+ java.time.LocalDate.now()+ ". Taxa de transferência: R$ "+ df.format( taxaTransferencia)+" Limite disponível: R$ "+ df.format( contaOrigem.getLimiteCredito()));
-            transacao.setContaCorrente(contaOrigem); // Conta origem
+            transacao.setContaCorrente(contaOrigem);
             transacaoRepository.save(transacao);
 
-            // Registra a transferência na auditoria
             String logMensagem = "Transferência de R$ " + valor + " para conta " + numeroContaDestino +" na data de "+ java.time.LocalDate.now()+ ". Taxa de transferência: R$ "+ df.format( taxaTransferencia)+"  Limite disponível: R$ "+ df.format( contaOrigem.getLimiteCredito());
             auditoriaService.save(logMensagem, transacao);
 

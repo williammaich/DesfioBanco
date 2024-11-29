@@ -73,11 +73,9 @@ public class TransacaoController {
     public ResponseEntity<Map<String, Object>> realizarTransferenciaEmLote(@RequestBody LoteTransferenciaDto loteTransferenciaDto) {
         List<TransferenciaDto> transferencias = loteTransferenciaDto.getTransferencias();
 
-        // Listas para armazenar as transferências bem-sucedidas e falhas
         List<TransferenciaDto> transferenciasBemSucedidas = new ArrayList<>();
         List<String> transferenciasFalhas = new ArrayList<>();
 
-        // Processa as transferências em paralelo
         List<CompletableFuture<Void>> futures = transferencias.stream()
                 .map(transferencia -> CompletableFuture.runAsync(() -> {
                     try {
@@ -100,10 +98,8 @@ public class TransacaoController {
                 }))
                 .collect(Collectors.toList());
 
-        // Aguarda a execução de todas as transferências
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
-        // Retorna o resultado
         return ResponseEntity.ok(
                 Map.of(
                         "sucesso", transferenciasBemSucedidas,

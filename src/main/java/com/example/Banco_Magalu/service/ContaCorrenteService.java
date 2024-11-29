@@ -17,7 +17,6 @@ public class ContaCorrenteService {
         this.contaCorrenteRepository = contaCorrenteRepository;
     }
 
-
     /*
      * Método para criar uma nova conta corrente
      *
@@ -47,7 +46,6 @@ public class ContaCorrenteService {
         return contaCorrenteRepository.save(contaCorrente);
     }
 
-
     /*
      * Método para buscar uma conta corrente pelo número da conta
      *
@@ -60,7 +58,6 @@ public class ContaCorrenteService {
         conta.ifPresent(c -> Hibernate.initialize(c.getTransacoes()));
         return conta;
     }
-
 
     /*
      * Método para atualizar o saldo de uma conta corrente
@@ -96,13 +93,21 @@ public class ContaCorrenteService {
         contaCorrenteRepository.save(conta);
     }
 
-
+    /**
+     * Método para buscar o limite máximo de uma conta corrente
+     * @param numero
+     * @return
+     */
     public BigDecimal buscarLimiteMaximo(String numero) {
         ContaCorrente conta = buscarConta(numero)
                 .orElseThrow(() -> new IllegalArgumentException("Conta não encontrada" + numero));
          return conta.getLimiteCredito();
     }
 
+    /**
+     * Método para atualizar o saldo de uma conta corrente
+     * @param conta
+     */
     public void atualizarSaldo(ContaCorrente conta) {
         contaCorrenteRepository.save(conta);
     }

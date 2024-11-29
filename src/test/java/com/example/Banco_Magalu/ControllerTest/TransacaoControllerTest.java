@@ -187,7 +187,6 @@ public class TransacaoControllerTest {
                 .andExpect(jsonPath("$.falhas").isArray()) // Espera um array para as falhas
                 .andExpect(jsonPath("$.falhas.length()").value(0)); // Se não houver falhas, o tamanho deve ser 0
     }
-
 }
 
 

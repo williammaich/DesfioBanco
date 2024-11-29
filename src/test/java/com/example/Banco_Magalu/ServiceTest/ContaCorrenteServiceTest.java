@@ -35,10 +35,10 @@ public class ContaCorrenteServiceTest {
     void testCriarContaValida() {
         ContaCorrente conta = new ContaCorrente(
                 "12345",
-                BigDecimal.valueOf(1000),//saldo inicial
-                BigDecimal.valueOf(1000),//limite atual
+                BigDecimal.valueOf(1000),
+                BigDecimal.valueOf(1000),
                 LocalDate.now(),
-                BigDecimal.valueOf(1000), //limite maximo
+                BigDecimal.valueOf(1000),
                 null);
         contaCorrenteRepository.save(conta);
 
@@ -55,7 +55,6 @@ public class ContaCorrenteServiceTest {
     void testCriarContaDuplicada() {
         ContaCorrente conta = new ContaCorrente("12345", BigDecimal.valueOf(1000), BigDecimal.valueOf(500), LocalDate.now(), BigDecimal.valueOf(1000), null);
 
-        // Lançamento da exceção ao tentar criar uma conta que já existe
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             contaCorrenteService.criarConta(conta);
         });

@@ -32,9 +32,13 @@ public class AuditoriaControllerTest {
         // Este método será executado antes de cada teste
     }
 
+    /**
+     * Teste para buscar mensagens de auditoria por conta
+     * @throws Exception
+     */
     @Test
     void testeBuscarMensagensAuditoriaConta() throws Exception {
-        // Prepara dados simulados para o teste
+
         String numeroConta = "321";
         List<String> mensagens = Arrays.asList(
                 "Transferência de R$ 100.00 realizada para conta 54321",
@@ -42,10 +46,9 @@ public class AuditoriaControllerTest {
                 "Depósito de R$ 200.00 realizado na conta 321"
         );
 
-        // Mocka o comportamento do serviço
         when(auditoriaService.buscarMensagensPorConta(numeroConta)).thenReturn(mensagens);
 
-        // Realiza o teste de GET para buscar as mensagens de auditoria
+
         mockMvc.perform(get("/auditoria/conta/{numeroConta}", numeroConta)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())  // Espera um status 200 OK
@@ -55,15 +58,17 @@ public class AuditoriaControllerTest {
                 .andExpect(jsonPath("$[2]").value("Depósito de R$ 200.00 realizado na conta 321"));  // Verifica a terceira mensagem
     }
 
+    /**
+     * Teste para buscar mensagens de auditoria por conta, mas com conta não encontrada
+     * @throws Exception
+     */
     @Test
     void testeBuscarMensagensAuditoriaContaNaoEncontrada() throws Exception {
-        // Prepara dados simulados para o teste
-        String numeroConta = "999";  // Conta que não existe no serviço
 
-        // Mocka o comportamento do serviço para retornar uma lista vazia (ou comportamento desejado)
+        String numeroConta = "999";
+
         when(auditoriaService.buscarMensagensPorConta(numeroConta)).thenReturn(List.of());
 
-        // Realiza o teste de GET para buscar as mensagens de auditoria
         mockMvc.perform(get("/auditoria/conta/{numeroConta}", numeroConta)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())  // Espera um status 200 OK

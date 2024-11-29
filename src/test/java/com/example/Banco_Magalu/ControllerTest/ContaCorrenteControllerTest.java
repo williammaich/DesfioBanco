@@ -41,6 +41,10 @@ public class ContaCorrenteControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(contaCorrenteController).build();
     }
 
+    /**
+     * Teste para criar uma conta corrente com sucesso
+     * @throws Exception
+     */
     @Test
     void testCriarConta() throws Exception {
 
@@ -66,6 +70,10 @@ public class ContaCorrenteControllerTest {
         assertNotNull(contaSalva.get().getDataDeCriacao());  // Verifica que a data de criação não é nula
     }
 
+    /**
+     * Teste para criar uma conta corrente com falha de validação
+     * @throws Exception
+     */
     @Test
     void testeConsultarContaNaoExistente() throws Exception {
 
@@ -75,6 +83,10 @@ public class ContaCorrenteControllerTest {
                 .andExpect(MockMvcResultMatchers.status().isNotFound());
     }
 
+    /**
+     * Teste para consultar uma conta corrente existente
+     * @throws Exception
+     */
     @Transactional
     @Test
     void testeConsultarContaExistente() throws Exception {
@@ -86,11 +98,15 @@ public class ContaCorrenteControllerTest {
             conta.setTransacoes(new ArrayList<>());
         }
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/conta-corrente/321")  // Alterado para 321
+        mockMvc.perform(MockMvcRequestBuilders.get("/conta-corrente/321")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().isOk());
     }
 
+    /**
+     * Teste para atualizar uma conta corrente existente
+     * @throws Exception
+     */
     @Test
     void testeAtualizarConta() throws Exception {
 

@@ -55,8 +55,6 @@ public class AuditoriaService {
                 .collect(Collectors.toList());
     }
 
-
-
     /*
      * Este método retorna todas as mensagens de auditoria do banco de dados.
      *
