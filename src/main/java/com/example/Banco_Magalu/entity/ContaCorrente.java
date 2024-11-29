@@ -31,7 +31,6 @@ public class ContaCorrente {
     @JsonManagedReference
     private List<Transacao> transacoes = new ArrayList<>();
 
-
     public ContaCorrente() { }
 
     public ContaCorrente(String numero, BigDecimal saldo, BigDecimal limiteCredito, LocalDate dataDeCriacao,BigDecimal limiteMaximo, List<Transacao> transacoes) {

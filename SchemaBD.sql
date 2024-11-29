@@ -2,7 +2,8 @@ CREATE TABLE ContaCorrente (
     numero VARCHAR(20) PRIMARY KEY,
     saldo DECIMAL(15, 2) NOT NULL CHECK(saldo >= 0),
     limite_credito DECIMAL(15, 2) NOT NULL CHECK (limite_credito >= 0),
-    data_criacao DATE NOT NULL
+    data_criacao DATE NOT NULL,
+    limite_Maximo DECIMAL(15,2) NOT NULL
 );
 
 CREATE TABLE Transacao (
