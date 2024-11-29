@@ -16,6 +16,11 @@ public class SaqueDto {
     @DecimalMin(value = "0.01", message = "Valor deve ser maior que zero")
     private BigDecimal valor;
 
+    public SaqueDto(String numeroConta, BigDecimal valor) {
+        this.numeroConta = numeroConta;
+        this.valor = valor;
+    }
+
     public String getNumeroConta() {
         return numeroConta;
     }

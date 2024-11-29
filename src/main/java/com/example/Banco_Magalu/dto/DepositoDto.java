@@ -16,6 +16,12 @@ public class DepositoDto {
     @DecimalMin(value = "0.01", message = "Valor do depósito deve ser maior que zero")
     private BigDecimal valor;
 
+
+
+    public DepositoDto(String numeroConta, BigDecimal valor) {
+        this.numeroConta = numeroConta;
+        this.valor = valor;
+    }
     public String getNumeroConta() {
         return numeroConta;
     }

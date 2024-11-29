@@ -20,6 +20,14 @@ public class TransferenciaDto {
     @Positive(message = "Valor deve ser positivo")
     private BigDecimal valor;
 
+    public TransferenciaDto() {}
+
+    public TransferenciaDto(String contaOrigem, String contaDestino, BigDecimal valor) {
+        this.contaOrigem = contaOrigem;
+        this.contaDestino = contaDestino;
+        this.valor = valor;
+    }
+
     public String getContaOrigem() {
         return contaOrigem;
     }

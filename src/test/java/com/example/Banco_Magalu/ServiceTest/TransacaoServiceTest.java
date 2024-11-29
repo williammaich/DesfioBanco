@@ -6,7 +6,6 @@ import com.example.Banco_Magalu.entity.Transacao;
 import com.example.Banco_Magalu.exception.SaldoInsuficienteException;
 import com.example.Banco_Magalu.repository.ContaCorrenteRepository;
 import com.example.Banco_Magalu.repository.TransacaoRepository;
-import com.example.Banco_Magalu.service.ContaCorrenteService;
 import com.example.Banco_Magalu.service.TransacaoService;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Assertions;

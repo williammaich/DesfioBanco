@@ -23,7 +23,6 @@ public class TransacaoController {
 
     private final TransacaoService transacaoService;
 
-    // Construtor para injeção de dependência do TransacaoService
     public TransacaoController(TransacaoService transacaoService) {
         this.transacaoService = transacaoService;
     }
@@ -113,4 +112,3 @@ public class TransacaoController {
         );
     }
 }
-

@@ -60,7 +60,6 @@ public class ContaCorrenteServiceTest {
             contaCorrenteService.criarConta(conta);
         });
 
-        // Verifica se a mensagem da exceção está correta
         assertEquals("Já existe uma conta com o número 12345", exception.getMessage());
 
     }
