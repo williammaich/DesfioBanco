@@ -134,6 +134,10 @@ Get:
 localhost:8080/auditoria/{numeroConta}  
 ``` 
 
+## Documentação da API no swagger
+
+http://localhost:8080/swagger-ui/index.html#/
+
 ## Autor
 
 William Maich Kolosque
