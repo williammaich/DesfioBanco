@@ -111,6 +111,16 @@ public class ContaCorrenteService {
     public void atualizarSaldo(ContaCorrente conta) {
         contaCorrenteRepository.save(conta);
     }
+
+    /**
+     * Método para deletar uma conta corrente
+     * @param numero
+     */
+     public void deletarConta(String numero) {
+         ContaCorrente conta = contaCorrenteRepository.findById(numero)
+                 .orElseThrow(() -> new IllegalArgumentException("Conta não encontrada " + numero));
+          contaCorrenteRepository.delete(conta);
+     }
 }
 
 

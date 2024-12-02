@@ -84,4 +84,26 @@ public class ContaCorrenteController {
         return ResponseEntity.ok(dto);
     }
 
+    @Operation(
+            summary = "Deletar uma conta  corrente",
+            description = "Permite deletar uma conta corrente identificada pelo número da conta."
+            )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "Conta deletada com sucesso"
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Conta não encontrada",
+                    content = @Content(mediaType = "application/json")
+            )
+
+    })
+    @DeleteMapping("/Deletar/{numero}")
+    public ResponseEntity<Void> deletarConta(@PathVariable("numero") String numero) {
+        contaCorrenteService.deletarConta(numero);
+        return ResponseEntity.noContent().build();
+    }
+
 }
