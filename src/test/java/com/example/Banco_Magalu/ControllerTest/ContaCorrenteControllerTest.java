@@ -47,10 +47,13 @@ public class ContaCorrenteControllerTest {
      */
     @Test
     void testCriarConta() throws Exception {
-
+        Optional<ContaCorrente> contaExistente = contaCorrenteService.buscarConta("155");
+        if(contaExistente.isPresent()){
+            contaCorrenteService.deletarConta("155");
+        }
         mockMvc.perform(MockMvcRequestBuilders.post("/conta-corrente")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"numero\": \"155\", \"saldo\": 1000, \"limiteCredito\": 500, \"dataDeCriacao\": \"" + LocalDate.now() + "\", \"limiteMaximo\": 1000, \"transacoes\": null}")
+                        .content("{\"numero\": \"155\", \"saldo\": 1000, \"limiteCredito\": 500, \"dataDeCriacao\": \"" + LocalDate.now() + "\", \"limiteMaximo\": 1000, \"transacoes\": []}")
                 )
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.numero").value("155"))
@@ -58,16 +61,14 @@ public class ContaCorrenteControllerTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.limiteCredito").value(500.00))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.limiteMaximo").value(1000.00));
 
-
         Optional<ContaCorrente> contaSalva = contaCorrenteService.buscarConta("155");
-
 
         assertTrue(contaSalva.isPresent());
         assertEquals("155", contaSalva.get().getNumero());
-        assertEquals(0,contaSalva.get().getSaldo().compareTo(BigDecimal.valueOf(1000)));
-        assertEquals(0,contaSalva.get().getLimiteCredito().compareTo(BigDecimal.valueOf(500)));
-        assertEquals(0,contaSalva.get().getLimiteMaximo().compareTo(BigDecimal.valueOf(1000)));
-        assertNotNull(contaSalva.get().getDataDeCriacao());  // Verifica que a data de criação não é nula
+        assertEquals(0, contaSalva.get().getSaldo().compareTo(BigDecimal.valueOf(1000)));
+        assertEquals(0, contaSalva.get().getLimiteCredito().compareTo(BigDecimal.valueOf(500)));
+        assertEquals(0, contaSalva.get().getLimiteMaximo().compareTo(BigDecimal.valueOf(1000)));
+        assertNotNull(contaSalva.get().getDataDeCriacao());
     }
 
     /**
